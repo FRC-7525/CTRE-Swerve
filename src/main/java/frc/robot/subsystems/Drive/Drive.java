@@ -2,13 +2,11 @@ package frc.robot.subsystems.Drive;
 
 import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.Utils;
-import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -31,6 +29,7 @@ public class Drive extends Subsystem<DriveStates> {
 
     // I don't like this also (I did this one tho)
     private DriveIO driveIO;
+    private DriveIOInputsAutoLogged inputs;
     private boolean zeroedWithRespectToAlliance = false;
 
     private Drive(DriveIO driveIO) {
@@ -77,6 +76,9 @@ public class Drive extends Subsystem<DriveStates> {
 
     @Override
     public void runState() {
+        driveIO.updateInputs(inputs);
+        Logger.processInputs("Drive", inputs);
+
         // Zero on init/when first disabled
         if (!zeroedWithRespectToAlliance || DriverStation.isDisabled()) {
             DriverStation.getAlliance().ifPresent(allianceColor -> {
