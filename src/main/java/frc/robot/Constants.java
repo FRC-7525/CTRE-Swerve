@@ -6,20 +6,21 @@ import frc.robot.subsystems.Drive.Drive.SysIdMode;
 
 public final class Constants {
 
-    public enum RobotState {
+    public enum RobotMode {
         REAL,
         TESTING,
         SIM
     }
 
-    public static final RobotState ROBOT_STATE = RobotState.REAL;
+    public static final RobotMode ROBOT_MODE = RobotMode.REAL;
 
     public static class Controllers {
         public static final XboxController DRIVER_CONTROLLER = new XboxController(0);
         public static final XboxController OPERATOR_CONTROLLER = new XboxController(1);
         public static final XboxController TEST_CONTROLLER = new XboxController(3);
-
-        public static final double DEADBAND = 0.1;
+        
+        // NOTE: Set to 0.1 on trash controllers
+        public static final double DEADBAND = 0.01;
     }
 
     public static class Drive {

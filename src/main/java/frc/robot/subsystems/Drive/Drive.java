@@ -25,18 +25,20 @@ import static edu.wpi.first.units.Units.*;
 import static frc.robot.Constants.Controllers.*;
 import static frc.robot.Constants.*;
 import static frc.robot.Constants.Drive.*;
+import static frc.robot.subsystems.Drive.TunerConstants.kSpeedAt12Volts;
 
 public class Drive extends Subsystem<DriveStates> {
     private static Drive instance;
 
-    // I don't like this also (I did this one tho)
     private DriveIO driveIO;
     private DriveIOInputsAutoLogged inputs;
-    private boolean zeroedWithRespectToAlliance = false;
+    private boolean robotMirrored = false;
     private Pose2d lastPose = new Pose2d();
-    // TODO: Pose jumping detection (last time - current time * velocity > translation * 2)
-    @SuppressWarnings("unused")
     private double lastTime = 0;
+    private final SwerveRequest.SysIdSwerveTranslation translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
+    private final SwerveRequest.SysIdSwerveSteerGains steerCharacterization = new SwerveRequest.SysIdSwerveSteerGains();
+    private final SwerveRequest.SysIdSwerveRotation rotationCharacterization = new SwerveRequest.SysIdSwerveRotation();
+
 
     /**
      * Constructs a new Drive subsystem with the given DriveIO.
@@ -46,10 +48,6 @@ public class Drive extends Subsystem<DriveStates> {
     private Drive(DriveIO driveIO) {
         super("Drive", DriveStates.FIELD_RELATIVE);
         this.driveIO = driveIO;
-        // I don't like this either
-        // TODO: I really don't like this
-        if (Utils.isSimulation()) {
-        }
 
         // Zero Gyro
         addRunnableTrigger(() -> {
@@ -62,13 +60,15 @@ public class Drive extends Subsystem<DriveStates> {
         addTrigger(DriveStates.ROBOT_RELATIVE, DriveStates.FIELD_RELATIVE,
                 () -> DRIVER_CONTROLLER.getBackButtonPressed());
 
-        // TODO: Kinda weird state issue I've never thought abt this so when you go into
-        // lockking wheels you can't go back to robot relative
-        addTrigger(DriveStates.FIELD_RELATIVE, DriveStates.LOCKING_WHEELS,
+        // Locking Wheels
+        addTrigger(DriveStates.FIELD_RELATIVE, DriveStates.LOCKING_WHEELS_FIELD,
                 () -> DRIVER_CONTROLLER.getLeftBumperPressed());
-        addTrigger(DriveStates.ROBOT_RELATIVE, DriveStates.LOCKING_WHEELS,
+        addTrigger(DriveStates.LOCKING_WHEELS_FIELD, DriveStates.FIELD_RELATIVE,
                 () -> DRIVER_CONTROLLER.getLeftBumperPressed());
-        addTrigger(DriveStates.LOCKING_WHEELS, DriveStates.FIELD_RELATIVE,
+
+        addTrigger(DriveStates.ROBOT_RELATIVE, DriveStates.LOCKING_WHEELS_ROBOT,
+                () -> DRIVER_CONTROLLER.getLeftBumperPressed());
+        addTrigger(DriveStates.LOCKING_WHEELS_ROBOT, DriveStates.ROBOT_RELATIVE,
                 () -> DRIVER_CONTROLLER.getLeftBumperPressed());
     }
 
@@ -80,7 +80,7 @@ public class Drive extends Subsystem<DriveStates> {
     public static Drive getInstance() {
         if (instance == null) {
             instance = new Drive(
-                    switch (ROBOT_STATE) {
+                    switch (ROBOT_MODE) {
                         case REAL -> new DriveIOReal();
                         case SIM -> new DriveIOSim();
                         case TESTING -> new DriveIOReal();
@@ -95,13 +95,13 @@ public class Drive extends Subsystem<DriveStates> {
         Logger.processInputs("Drive", inputs);
 
         // Zero on init/when first disabled
-        if (!zeroedWithRespectToAlliance || DriverStation.isDisabled()) {
+        if (!robotMirrored || DriverStation.isDisabled()) {
             DriverStation.getAlliance().ifPresent(allianceColor -> {
                 driveIO.getDrive().setOperatorPerspectiveForward(
                         allianceColor == Alliance.Red
                                 ? Constants.Drive.redAlliancePerspectiveRotation
                                 : Constants.Drive.blueAlliancePerspectiveRotation);
-                zeroedWithRespectToAlliance = true;
+                robotMirrored = true;
             });
         }
 
@@ -116,7 +116,6 @@ public class Drive extends Subsystem<DriveStates> {
         }
 
         logOutputs(driveIO.getDrive().getState());
-        Logger.recordOutput("Drive/State", getState().getStateString());
     }
 
     /**
@@ -134,6 +133,8 @@ public class Drive extends Subsystem<DriveStates> {
         Logger.recordOutput(SUBSYSTEM_NAME + "/swerveModulePosition", state.ModulePositions);
         Logger.recordOutput(SUBSYSTEM_NAME + "/Translation Difference",
                 state.Pose.getTranslation().minus(lastPose.getTranslation()));
+        Logger.recordOutput(SUBSYSTEM_NAME + "/State", getState().getStateString());
+        Logger.recordOutput(SUBSYSTEM_NAME + "/Pose Jumped", Math.hypot(state.Pose.getTranslation().minus(lastPose.getTranslation()).getX(), state.Pose.getTranslation().minus(lastPose.getTranslation()).getY()) > (kSpeedAt12Volts.in(MetersPerSecond) * 2 * (lastTime - Utils.getSystemTimeSeconds())));
 
         lastPose = state.Pose;
         lastTime = Utils.getSystemTimeSeconds();
@@ -196,10 +197,6 @@ public class Drive extends Subsystem<DriveStates> {
         ROTATION
     }
 
-    private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
-    private final SwerveRequest.SysIdSwerveSteerGains m_steerCharacterization = new SwerveRequest.SysIdSwerveSteerGains();
-    private final SwerveRequest.SysIdSwerveRotation m_rotationCharacterization = new SwerveRequest.SysIdSwerveRotation();
-
     /*
      * SysId routine for characterizing rotation.
      * This is used to find PID gains for the FieldCentrvesicFacingAngle
@@ -219,7 +216,7 @@ public class Drive extends Subsystem<DriveStates> {
             new SysIdRoutine.Mechanism(
                     output -> {
                         /* output is actually radians per second, but SysId only supports "volts" */
-                        driveIO.getDrive().setControl(m_rotationCharacterization.withRotationalRate(output.in(Volts)));
+                        driveIO.getDrive().setControl(rotationCharacterization.withRotationalRate(output.in(Volts)));
                         /* also log the requested output for SysId */
                         SignalLogger.writeDouble("Rotational_Rate", output.in(Volts));
                     },
@@ -238,7 +235,7 @@ public class Drive extends Subsystem<DriveStates> {
                     // Log state with SignalLogger class
                     state -> SignalLogger.writeString("SysIdTranslation_State", state.toString())),
             new SysIdRoutine.Mechanism(
-                    output -> driveIO.getDrive().setControl(m_translationCharacterization.withVolts(output)),
+                    output -> driveIO.getDrive().setControl(translationCharacterization.withVolts(output)),
                     null,
                     Drive.getInstance()));
 
@@ -254,7 +251,7 @@ public class Drive extends Subsystem<DriveStates> {
                     // Log state with SignalLogger class
                     state -> SignalLogger.writeString("SysIdSteer_State", state.toString())),
             new SysIdRoutine.Mechanism(
-                    volts -> driveIO.getDrive().setControl(m_steerCharacterization.withVolts(volts)),
+                    volts -> driveIO.getDrive().setControl(steerCharacterization.withVolts(volts)),
                     null,
                     Drive.getInstance()));
 

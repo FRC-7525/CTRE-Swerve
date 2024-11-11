@@ -9,17 +9,22 @@ public enum DriveStates implements SubsystemStates {
     /**
      * The robot's drive is in field-relative mode.
      */
-    FIELD_RELATIVE("Field Relative", true),
+    FIELD_RELATIVE("Field Relative"),
 
     /**
      * The robot's drive is in robot-relative mode.
      */
-    ROBOT_RELATIVE("Robot Relative", false),
+    ROBOT_RELATIVE("Robot Relative"),
 
     /**
-     * The robot's drive is in locking wheels mode.
+     * The robot's drive is in locking wheels mode starting from field relative.
      */
-    LOCKING_WHEELS("Locking Wheels", false);
+    LOCKING_WHEELS_FIELD("Locking Wheels"),
+
+    /**
+     * The robot's drive is in locking wheels mode starting from robot relative.
+     */
+    LOCKING_WHEELS_ROBOT("Locking Wheels Robot");
 
     private String stateString;
     private boolean fieldRelative;
@@ -30,9 +35,8 @@ public enum DriveStates implements SubsystemStates {
      * @param stateString    the string representation of the drive state
      * @param fieldRelative  true if the drive state is field-relative, false otherwise
      */
-    DriveStates(String stateString, boolean fieldRelative) {
+    DriveStates(String stateString) {
         this.stateString = stateString;
-        this.fieldRelative = fieldRelative;
     } 
 
     /**

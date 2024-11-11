@@ -21,7 +21,6 @@ public interface DriveIO {
     public class DriveIOInputs {
         ChassisSpeeds speeds = new ChassisSpeeds();
         SwerveModuleState[] setPoints = new SwerveModuleState[4];
-        Pose2d pose = new Pose2d();
         Rotation3d fullRobotRotation = new Rotation3d();
         double odometryFrequency = 0;
         double timestamp = 0;

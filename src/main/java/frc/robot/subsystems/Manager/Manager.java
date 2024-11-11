@@ -24,7 +24,7 @@ public class Manager extends Subsystem<ManagerStates> {
         // State transitions go here
 
         // SYS ID Tests (see constants to change test type for drive)
-        if (ROBOT_STATE == RobotState.TESTING) {
+        if (ROBOT_MODE == RobotMode.TESTING) {
             addRunnableTrigger(() -> {commandScheduler.schedule(sysIdSubsystem.sysIdDynamic(Direction.kForward));}, () -> TEST_CONTROLLER.getAButtonPressed());
             addRunnableTrigger(() -> {commandScheduler.schedule(sysIdSubsystem.sysIdDynamic(Direction.kReverse));}, () -> TEST_CONTROLLER.getBButtonPressed());
             addRunnableTrigger(() -> {commandScheduler.schedule(sysIdSubsystem.sysIdQuasistatic(Direction.kForward));}, () -> TEST_CONTROLLER.getXButtonPressed());

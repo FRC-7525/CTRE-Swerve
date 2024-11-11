@@ -31,7 +31,6 @@ public class DriveIOReal implements DriveIO {
         inputs.timestamp = drivetrain.getState().Timestamp;
         inputs.failedDataAquisitions = drivetrain.getState().FailedDaqs;
         inputs.robotAngleDeg = drivetrain.getState().Pose.getRotation().getDegrees();
-        inputs.pose = drivetrain.getState().Pose;
         inputs.fullRobotRotation = drivetrain.getRotation3d();
         inputs.gyroAngleDeg = drivetrain.getPigeon2().getYaw().getValueAsDouble();
     }
