@@ -20,7 +20,6 @@ public class DriveOutputManager {
         Translation2d distanceDiff = currentPose2d.minus(lastPose).getTranslation();
         lastPose = currentPose2d;
         lastTime = currentTime;
-        
 
         Logger.recordOutput("Drive/RealOutput/robotPose", currentPose2d);
         Logger.recordOutput("Drive/RealOutput/currentTIme", currentTime);
