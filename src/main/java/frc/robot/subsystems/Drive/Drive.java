@@ -105,15 +105,7 @@ public class Drive extends Subsystem<DriveStates> {
             });
         }
 
-        if (getState() == DriveStates.FIELD_RELATIVE) {
-            driveFieldRelative(DRIVER_CONTROLLER.getLeftX(), DRIVER_CONTROLLER.getLeftY(),
-                    DRIVER_CONTROLLER.getRightX());
-        } else if (getState() == DriveStates.ROBOT_RELATIVE) {
-            driveRobotRelative(DRIVER_CONTROLLER.getLeftX(), DRIVER_CONTROLLER.getLeftY(),
-                    DRIVER_CONTROLLER.getRightY());
-        } else {
-            lockWheels();
-        }
+        getState().driveRobot();
 
         logOutputs(driveIO.getDrive().getState());
     }
