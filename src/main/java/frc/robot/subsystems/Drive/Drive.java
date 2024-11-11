@@ -22,7 +22,11 @@ import frc.robot.Constants;
 import frc.robot.Telemetry;
 import frc.robot.pioneersLib.subsystem.Subsystem;
 
+
 import static frc.robot.subsystems.Drive.TunerConstants.*;
+
+import org.littletonrobotics.junction.Logger;
+
 import static edu.wpi.first.units.Units.*;
 import static frc.robot.Constants.Controllers.*;
 
@@ -48,7 +52,6 @@ public class Drive extends Subsystem<DriveStates> {
         // I don't like this either
         telemetryLogger = new Telemetry(kSpeedAt12Volts.in(MetersPerSecond));
         drivetrain.registerTelemetry(telemetryLogger::telemeterize);
-
         // TODO: I really don't like this
         if (Utils.isSimulation()) {
             startSimThread();
