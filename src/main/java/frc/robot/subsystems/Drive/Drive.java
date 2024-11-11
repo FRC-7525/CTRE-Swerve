@@ -39,7 +39,6 @@ public class Drive extends Subsystem<DriveStates> {
     private final SwerveRequest.SysIdSwerveSteerGains steerCharacterization = new SwerveRequest.SysIdSwerveSteerGains();
     private final SwerveRequest.SysIdSwerveRotation rotationCharacterization = new SwerveRequest.SysIdSwerveRotation();
 
-
     /**
      * Constructs a new Drive subsystem with the given DriveIO.
      * 
@@ -62,14 +61,14 @@ public class Drive extends Subsystem<DriveStates> {
 
         // Locking Wheels
         addTrigger(DriveStates.FIELD_RELATIVE, DriveStates.LOCKING_WHEELS_FIELD,
-                () -> DRIVER_CONTROLLER.getLeftBumperPressed());
+                () -> DRIVER_CONTROLLER.getLeftBumperButtonPressed());
         addTrigger(DriveStates.LOCKING_WHEELS_FIELD, DriveStates.FIELD_RELATIVE,
-                () -> DRIVER_CONTROLLER.getLeftBumperPressed());
+                () -> DRIVER_CONTROLLER.getLeftBumperButtonPressed());
 
         addTrigger(DriveStates.ROBOT_RELATIVE, DriveStates.LOCKING_WHEELS_ROBOT,
-                () -> DRIVER_CONTROLLER.getLeftBumperPressed());
+                () -> DRIVER_CONTROLLER.getLeftBumperButtonPressed());
         addTrigger(DriveStates.LOCKING_WHEELS_ROBOT, DriveStates.ROBOT_RELATIVE,
-                () -> DRIVER_CONTROLLER.getLeftBumperPressed());
+                () -> DRIVER_CONTROLLER.getLeftBumperButtonPressed());
     }
 
     /**

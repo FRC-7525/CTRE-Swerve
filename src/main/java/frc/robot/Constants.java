@@ -12,7 +12,7 @@ public final class Constants {
         SIM
     }
 
-    public static final RobotMode ROBOT_MODE = RobotMode.REAL;
+    public static final RobotMode ROBOT_MODE = RobotMode.SIM;
 
     public static class Controllers {
         public static final XboxController DRIVER_CONTROLLER = new XboxController(0);
