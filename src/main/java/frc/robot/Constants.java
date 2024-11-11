@@ -26,6 +26,7 @@ public final class Constants {
         public static final double SIM_UPDATE_TIME = 0.004;
         // Change to change the sysID test that gets run for drive
         public static final SysIdMode SYS_ID_MODE = SysIdMode.STEER;
+        public static final String SUBSYSTEM_NAME = "Drive";
 
         // For zeroing on robot init
         public static final Rotation2d blueAlliancePerspectiveRotation = Rotation2d.fromDegrees(0);

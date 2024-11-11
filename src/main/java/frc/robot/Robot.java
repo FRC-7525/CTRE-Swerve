@@ -4,13 +4,24 @@
 
 package frc.robot;
 
-import edu.wpi.first.wpilibj.TimedRobot;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.subsystems.Manager.Manager;
 
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
 
     private final Manager manager = Manager.getInstance();
+
+    @Override
+    public void robotInit() {
+        Logger.addDataReceiver(new NT4Publisher());
+		Logger.start();
+		DriverStation.silenceJoystickConnectionWarning(true);
+    }
 
     @Override
     public void robotPeriodic() {
