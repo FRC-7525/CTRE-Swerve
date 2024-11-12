@@ -1,6 +1,9 @@
 package frc.robot;
 
+import static edu.wpi.first.units.Units.DegreesPerSecond;
+
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.XboxController;
 import frc.robot.subsystems.Drive.Drive.SysIdMode;
 
@@ -25,6 +28,9 @@ public final class Constants {
 
     public static class Drive {
         public static final double SIM_UPDATE_TIME = 0.004;
+
+        public static final AngularVelocity ANGULAR_VELOCITY_LIMIT = AngularVelocity.ofBaseUnits(180,  DegreesPerSecond);
+
         // Change to change the sysID test that gets run for drive
         public static final SysIdMode SYS_ID_MODE = SysIdMode.STEER;
         public static final String SUBSYSTEM_NAME = "Drive";

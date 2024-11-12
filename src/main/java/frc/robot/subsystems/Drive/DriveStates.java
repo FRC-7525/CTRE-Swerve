@@ -2,7 +2,10 @@ package frc.robot.subsystems.Drive;
 
 import frc.robot.pioneersLib.subsystem.SubsystemStates;
 
+import static edu.wpi.first.units.Units.*;
 import static frc.robot.Constants.Controllers.*;
+import static frc.robot.Constants.Drive.*;
+import static frc.robot.subsystems.Drive.TunerConstants.*;
 
 /**
  * An enumeration representing different drive states for a robot's drive subsystem.
@@ -11,12 +14,12 @@ public enum DriveStates implements SubsystemStates {
     /**
      * The robot's drive is in field-relative mode.
      */
-    FIELD_RELATIVE("Field Relative", () -> {Drive.getInstance().driveFieldRelative(DRIVER_CONTROLLER.getRightX(), DRIVER_CONTROLLER.getRightY(), DRIVER_CONTROLLER.getLeftX());}),
+    FIELD_RELATIVE("Field Relative", () -> {Drive.getInstance().driveFieldRelative(DRIVER_CONTROLLER.getLeftX() * kSpeedAt12Volts.in(MetersPerSecond), DRIVER_CONTROLLER.getLeftY() * kSpeedAt12Volts.in(MetersPerSecond), DRIVER_CONTROLLER.getRightX() * ANGULAR_VELOCITY_LIMIT.in(RadiansPerSecond));}),
 
     /**
      * The robot's drive is in robot-relative mode.
      */
-    ROBOT_RELATIVE("Robot Relative", () -> {Drive.getInstance().driveRobotRelative(DRIVER_CONTROLLER.getRightX(), DRIVER_CONTROLLER.getRightY(), DRIVER_CONTROLLER.getLeftX());}),
+    ROBOT_RELATIVE("Robot Relative", () -> {Drive.getInstance().driveRobotRelative(DRIVER_CONTROLLER.getLeftX() * kSpeedAt12Volts.in(MetersPerSecond), DRIVER_CONTROLLER.getLeftY() * kSpeedAt12Volts.in(MetersPerSecond), DRIVER_CONTROLLER.getRightX() * ANGULAR_VELOCITY_LIMIT.in(RadiansPerSecond));}),
 
     /**
      * The robot's drive is in locking wheels mode starting from field relative.

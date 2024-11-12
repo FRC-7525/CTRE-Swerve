@@ -31,7 +31,7 @@ public class Drive extends Subsystem<DriveStates> {
     private static Drive instance;
 
     private DriveIO driveIO;
-    private DriveIOInputsAutoLogged inputs;
+    private DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
     private boolean robotMirrored = false;
     private Pose2d lastPose = new Pose2d();
     private double lastTime = 0;
@@ -44,9 +44,14 @@ public class Drive extends Subsystem<DriveStates> {
      * 
      * @param driveIO The DriveIO object used for controlling the drive system.
      */
-    private Drive(DriveIO driveIO) {
+    private Drive() {
         super("Drive", DriveStates.FIELD_RELATIVE);
-        this.driveIO = driveIO;
+        this.driveIO = 
+            switch (ROBOT_MODE) {
+                case REAL -> new DriveIOReal();
+                case SIM -> new DriveIOSim();
+                case TESTING -> new DriveIOReal();
+            };
 
         // Zero Gyro
         addRunnableTrigger(() -> {
@@ -78,12 +83,7 @@ public class Drive extends Subsystem<DriveStates> {
      */
     public static Drive getInstance() {
         if (instance == null) {
-            instance = new Drive(
-                    switch (ROBOT_MODE) {
-                        case REAL -> new DriveIOReal();
-                        case SIM -> new DriveIOSim();
-                        case TESTING -> new DriveIOReal();
-                    });
+            instance = new Drive();
         }
         return instance;
     }
@@ -212,7 +212,7 @@ public class Drive extends Subsystem<DriveStates> {
                         SignalLogger.writeDouble("Rotational_Rate", output.in(Volts));
                     },
                     null,
-                    Drive.getInstance()));
+                    this));
 
     /*
      * SysId routine for characterizing translation. This is used to find PID gains
@@ -228,7 +228,7 @@ public class Drive extends Subsystem<DriveStates> {
             new SysIdRoutine.Mechanism(
                     output -> driveIO.getDrive().setControl(translationCharacterization.withVolts(output)),
                     null,
-                    Drive.getInstance()));
+                    this));
 
     /*
      * SysId routine for characterizing steer. This is used to find PID gains for
@@ -244,7 +244,7 @@ public class Drive extends Subsystem<DriveStates> {
             new SysIdRoutine.Mechanism(
                     volts -> driveIO.getDrive().setControl(steerCharacterization.withVolts(volts)),
                     null,
-                    Drive.getInstance()));
+                    this));
 
     @Override
     public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {

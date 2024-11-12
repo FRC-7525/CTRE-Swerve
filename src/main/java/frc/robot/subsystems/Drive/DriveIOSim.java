@@ -20,7 +20,6 @@ public class DriveIOSim extends DriveIOReal {
      * It initializes the superclass and starts the simulation thread.
      */
     public DriveIOSim() {
-        super();
         startSimThread();
     }
 
