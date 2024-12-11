@@ -50,34 +50,33 @@ public class Drive extends Subsystem<DriveStates> {
      */
     private Drive() {
         super("Drive", DriveStates.FIELD_RELATIVE);
-        this.driveIO = 
-            switch (ROBOT_MODE) {
-                case REAL -> new DriveIOReal();
-                case SIM -> new DriveIOSim();
-                case TESTING -> new DriveIOReal();
-            };
+        this.driveIO = switch (ROBOT_MODE) {
+            case REAL -> new DriveIOReal();
+            case SIM -> new DriveIOSim();
+            case TESTING -> new DriveIOReal();
+        };
 
         // Zero Gyro
         addRunnableTrigger(() -> {
             driveIO.zeroGyro();
-        }, () -> DRIVER_CONTROLLER.getStartButtonPressed());
+        }, DRIVER_CONTROLLER::getStartButtonPressed);
 
         // Field to relative and whatnot
         addTrigger(DriveStates.FIELD_RELATIVE, DriveStates.ROBOT_RELATIVE,
-                () -> DRIVER_CONTROLLER.getBackButtonPressed());
+                DRIVER_CONTROLLER::getBackButtonPressed);
         addTrigger(DriveStates.ROBOT_RELATIVE, DriveStates.FIELD_RELATIVE,
-                () -> DRIVER_CONTROLLER.getBackButtonPressed());
+                DRIVER_CONTROLLER::getBackButtonPressed);
 
         // Locking Wheels
         addTrigger(DriveStates.FIELD_RELATIVE, DriveStates.LOCKING_WHEELS_FIELD,
-                () -> DRIVER_CONTROLLER.getLeftBumperButtonPressed());
+                DRIVER_CONTROLLER::getLeftBumperButtonPressed);
         addTrigger(DriveStates.LOCKING_WHEELS_FIELD, DriveStates.FIELD_RELATIVE,
-                () -> DRIVER_CONTROLLER.getLeftBumperButtonPressed());
+                DRIVER_CONTROLLER::getLeftBumperButtonPressed);
 
         addTrigger(DriveStates.ROBOT_RELATIVE, DriveStates.LOCKING_WHEELS_ROBOT,
-                () -> DRIVER_CONTROLLER.getLeftBumperButtonPressed());
+                DRIVER_CONTROLLER::getLeftBumperButtonPressed);
         addTrigger(DriveStates.LOCKING_WHEELS_ROBOT, DriveStates.ROBOT_RELATIVE,
-                () -> DRIVER_CONTROLLER.getLeftBumperButtonPressed());
+                DRIVER_CONTROLLER::getLeftBumperButtonPressed);
     }
 
     /**
@@ -129,7 +128,11 @@ public class Drive extends Subsystem<DriveStates> {
         Logger.recordOutput(SUBSYSTEM_NAME + "/Translation Difference",
                 state.Pose.getTranslation().minus(lastPose.getTranslation()));
         Logger.recordOutput(SUBSYSTEM_NAME + "/State", getState().getStateString());
-        Logger.recordOutput(SUBSYSTEM_NAME + "/Pose Jumped", Math.hypot(state.Pose.getTranslation().minus(lastPose.getTranslation()).getX(), state.Pose.getTranslation().minus(lastPose.getTranslation()).getY()) > (kSpeedAt12Volts.in(MetersPerSecond) * 2 * (lastTime - Utils.getSystemTimeSeconds())));
+        Logger.recordOutput(SUBSYSTEM_NAME + "/Pose Jumped",
+                Math.hypot(state.Pose.getTranslation().minus(lastPose.getTranslation()).getX(),
+                        state.Pose.getTranslation().minus(lastPose.getTranslation())
+                                .getY()) > (kSpeedAt12Volts.in(MetersPerSecond) * 2
+                                        * (lastTime - Utils.getSystemTimeSeconds())));
 
         lastPose = state.Pose;
         lastTime = Utils.getSystemTimeSeconds();
@@ -278,42 +281,46 @@ public class Drive extends Subsystem<DriveStates> {
         }
     }
 
-    public Pose2d getPose() { 
-        return driveIO.getDrive().getState().Pose;  
+    public Pose2d getPose() {
+        return driveIO.getDrive().getState().Pose;
     }
 
     public void resetPose() {
         driveIO.getDrive().resetPose(new Pose2d());
     }
 
-    //TODO: FINISH AUTOBUILDER STUFF
+    // TODO: FINISH AUTOBUILDER STUFF
     public ChassisSpeeds getRobotRelativeSpeeds() {
         driveIO.getDrive().getKinematics();
     }
 
     public void configureAutoBuild() {
         AutoBuilder.configure(
-            this::getPose, // Robot pose supplier
-            this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
-            this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-            (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
-            new PPHolonomicDriveController( // PPHolonomicController is the built in path following controller for holonomic drive trains
-                    new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
-                    new PIDConstants(5.0, 0.0, 0.0) // Rotation PID constants
-            ),
-            config, // The robot configuration
-            () -> {
-              // Boolean supplier that controls when the path will be mirrored for the red alliance
-              // This will flip the path being followed to the red side of the field.
-              // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+                this::getPose, // Robot pose supplier
+                this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
+                this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+                (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT
+                                                                      // RELATIVE ChassisSpeeds. Also optionally outputs
+                                                                      // individual module feedforwards
+                new PPHolonomicDriveController( // PPHolonomicController is the built in path following controller for
+                                                // holonomic drive trains
+                        new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
+                        new PIDConstants(5.0, 0.0, 0.0) // Rotation PID constants
+                ),
+                config, // The robot configuration
+                () -> {
+                    // Boolean supplier that controls when the path will be mirrored for the red
+                    // alliance
+                    // This will flip the path being followed to the red side of the field.
+                    // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
 
-              var alliance = DriverStation.getAlliance();
-              if (alliance.isPresent()) {
-                return alliance.get() == DriverStation.Alliance.Red;
-              }
-              return false;
-            },
-            this // Reference to this subsystem to set requirements
+                    var alliance = DriverStation.getAlliance();
+                    if (alliance.isPresent()) {
+                        return alliance.get() == DriverStation.Alliance.Red;
+                    }
+                    return false;
+                },
+                this // Reference to this subsystem to set requirements
         );
     }
 }
