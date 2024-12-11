@@ -10,16 +10,20 @@ import org.littletonrobotics.junction.networktables.NT4Publisher;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.subsystems.Manager.AutoManager;
+import frc.robot.pioneersLib.misc.CommandsUtil;
 import frc.robot.subsystems.Manager.Manager;
 
 public class Robot extends LoggedRobot {
 
     private final Manager manager = Manager.getInstance();
+    private final AutoManager autoManager = AutoManager.getInstance();
 
     @Override
     public void robotInit() {
         Logger.addDataReceiver(new NT4Publisher());
 		Logger.start();
+        CommandsUtil.logCommands();
 		DriverStation.silenceJoystickConnectionWarning(true);
     }
 
@@ -43,6 +47,7 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void autonomousInit() {
+        CommandScheduler.getInstance().schedule(autoManager.getSelectedAuto());
     }
 
     @Override
@@ -51,6 +56,7 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void autonomousExit() {
+        CommandScheduler.getInstance().cancelAll();
     }
 
     @Override

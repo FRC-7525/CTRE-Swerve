@@ -107,10 +107,12 @@ public class Drive extends Subsystem<DriveStates> {
                 robotMirrored = true;
             });
         }
-
-        getState().driveRobot();
-
         logOutputs(driveIO.getDrive().getState());
+
+        // Otherwise it will try to force wheels to stop in auto
+        if (!DriverStation.isAutonomous()) {
+            getState().driveRobot();
+        }
     }
 
     /**
