@@ -8,6 +8,7 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.pathfinding.LocalADStar;
 import com.pathplanner.lib.pathfinding.Pathfinding;
+import com.pathplanner.lib.util.DriveFeedforwards;
 import com.pathplanner.lib.util.PathPlannerLogging;
 
 import edu.wpi.first.math.Matrix;
@@ -294,6 +295,14 @@ public class Drive extends Subsystem<DriveStates> {
         driveRobotRelative(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond);
     }
 
+    // Better at driving stuff or sum (I think this makes a meh difference)
+    public void driveRobotRelativeWithFF(ChassisSpeeds speeds, DriveFeedforwards feedforwards) {
+        driveIO.getDrive().setControl(
+                    new SwerveRequest.ApplyRobotSpeeds().withSpeeds(speeds)
+                        .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
+                        .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons()));
+    }
+
     public Pose2d getPose() {
         return driveIO.getDrive().getState().Pose;
     }
@@ -306,28 +315,18 @@ public class Drive extends Subsystem<DriveStates> {
         return driveIO.getDrive().getState().Speeds;
     }
 
+
     public void configurePathPlanner() {
         AutoBuilder.configure(
                 this::getPose, // Robot pose supplier
                 this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
                 this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-                this::driveRobotRelative, // Method that will drive the robot given ROBOT
+                this::driveRobotRelativeWithFF, // Method that will drive the robot given ROBOT
                                                                       // RELATIVE ChassisSpeeds. Also optionally outputs
                                                                       // individual module feedforwards
                 PATH_PLANNER_PID,
                 ROBOT_CONFIG, // The robot configuration
-                () -> {
-                    // Boolean supplier that controls when the path will be mirrored for the red
-                    // alliance
-                    // This will flip the path being followed to the red side of the field.
-                    // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
-
-                    var alliance = DriverStation.getAlliance();
-                    if (alliance.isPresent()) {
-                        return alliance.get() == DriverStation.Alliance.Red;
-                    }
-                    return false;
-                },
+                () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
                 this // Reference to this subsystem to set requirements
         );
 
