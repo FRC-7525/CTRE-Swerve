@@ -6,7 +6,6 @@ import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -20,7 +19,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
-import frc.robot.pioneersLib.controlConstants.PIDConstants;
 import frc.robot.pioneersLib.subsystem.Subsystem;
 
 import org.littletonrobotics.junction.Logger;
@@ -55,6 +53,9 @@ public class Drive extends Subsystem<DriveStates> {
             case SIM -> new DriveIOSim();
             case TESTING -> new DriveIOReal();
         };
+
+        // Setup Path Planner
+        configurePathPlanner();
 
         // Zero Gyro
         addRunnableTrigger(() -> {
@@ -101,8 +102,8 @@ public class Drive extends Subsystem<DriveStates> {
             DriverStation.getAlliance().ifPresent(allianceColor -> {
                 driveIO.getDrive().setOperatorPerspectiveForward(
                         allianceColor == Alliance.Red
-                                ? Constants.Drive.redAlliancePerspectiveRotation
-                                : Constants.Drive.blueAlliancePerspectiveRotation);
+                                ? Constants.Drive.RED_ALLIANCE_PERSPECTIVE_ROTATION
+                                : Constants.Drive.BLUE_ALLIANCE_PERSPECTIVE_ROTATION);
                 robotMirrored = true;
             });
         }
@@ -281,36 +282,34 @@ public class Drive extends Subsystem<DriveStates> {
         }
     }
 
+    // Path Planner UTIL
+
+    public void driveRobotRelative(ChassisSpeeds speeds) {
+        driveRobotRelative(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond);
+    }
+
     public Pose2d getPose() {
         return driveIO.getDrive().getState().Pose;
     }
 
-    public void resetPose() {
-        driveIO.getDrive().resetPose(new Pose2d());
+    public void resetPose(Pose2d pose) {
+        driveIO.getDrive().resetPose(pose);
     }
 
-    // TODO: FINISH AUTOBUILDER STUFF
     public ChassisSpeeds getRobotRelativeSpeeds() {
-        driveIO.getDrive().getKinematics();
+        return driveIO.getDrive().getState().Speeds;
     }
 
-    public void configureAutoBuild() {
-        AutoBuilder.configure(
+    public void configurePathPlanner() {
+            AutoBuilder.configure(
                 this::getPose, // Robot pose supplier
                 this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
                 this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-                (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT
-                                                                      // RELATIVE ChassisSpeeds. Also optionally outputs
-                                                                      // individual module feedforwards
-                new PPHolonomicDriveController( // PPHolonomicController is the built in path following controller for
-                                                // holonomic drive trains
-                        new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
-                        new PIDConstants(5.0, 0.0, 0.0) // Rotation PID constants
-                ),
-                config, // The robot configuration
+                (speeds, feedforwards) -> driveRobotRelative(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
+                PATH_PLANNER_PID,
+                ROBOT_CONFIG, // The robot configuration
                 () -> {
-                    // Boolean supplier that controls when the path will be mirrored for the red
-                    // alliance
+                    // Boolean supplier that controls when the path will be mirrored for the red alliance
                     // This will flip the path being followed to the red side of the field.
                     // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
 
