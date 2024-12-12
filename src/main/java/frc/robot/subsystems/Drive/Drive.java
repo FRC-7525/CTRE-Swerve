@@ -5,9 +5,15 @@ import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.pathfinding.LocalADStar;
+import com.pathplanner.lib.pathfinding.Pathfinding;
+import com.pathplanner.lib.util.DriveFeedforwards;
+import com.pathplanner.lib.util.PathPlannerLogging;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
@@ -17,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
+import frc.robot.pioneersLib.misc.LocalADStarAK;
 import frc.robot.pioneersLib.subsystem.Subsystem;
 
 import org.littletonrobotics.junction.Logger;
@@ -46,34 +53,36 @@ public class Drive extends Subsystem<DriveStates> {
      */
     private Drive() {
         super("Drive", DriveStates.FIELD_RELATIVE);
-        this.driveIO = 
-            switch (ROBOT_MODE) {
-                case REAL -> new DriveIOReal();
-                case SIM -> new DriveIOSim();
-                case TESTING -> new DriveIOReal();
-            };
+        this.driveIO = switch (ROBOT_MODE) {
+            case REAL -> new DriveIOReal();
+            case SIM -> new DriveIOSim();
+            case TESTING -> new DriveIOReal();
+        };
+
+        // Setup Path Planner
+        configurePathPlanner();
 
         // Zero Gyro
         addRunnableTrigger(() -> {
             driveIO.zeroGyro();
-        }, () -> DRIVER_CONTROLLER.getStartButtonPressed());
+        }, DRIVER_CONTROLLER::getStartButtonPressed);
 
         // Field to relative and whatnot
         addTrigger(DriveStates.FIELD_RELATIVE, DriveStates.ROBOT_RELATIVE,
-                () -> DRIVER_CONTROLLER.getBackButtonPressed());
+                DRIVER_CONTROLLER::getBackButtonPressed);
         addTrigger(DriveStates.ROBOT_RELATIVE, DriveStates.FIELD_RELATIVE,
-                () -> DRIVER_CONTROLLER.getBackButtonPressed());
+                DRIVER_CONTROLLER::getBackButtonPressed);
 
         // Locking Wheels
         addTrigger(DriveStates.FIELD_RELATIVE, DriveStates.LOCKING_WHEELS_FIELD,
-                () -> DRIVER_CONTROLLER.getLeftBumperButtonPressed());
+                DRIVER_CONTROLLER::getLeftBumperButtonPressed);
         addTrigger(DriveStates.LOCKING_WHEELS_FIELD, DriveStates.FIELD_RELATIVE,
-                () -> DRIVER_CONTROLLER.getLeftBumperButtonPressed());
+                DRIVER_CONTROLLER::getLeftBumperButtonPressed);
 
         addTrigger(DriveStates.ROBOT_RELATIVE, DriveStates.LOCKING_WHEELS_ROBOT,
-                () -> DRIVER_CONTROLLER.getLeftBumperButtonPressed());
+                DRIVER_CONTROLLER::getLeftBumperButtonPressed);
         addTrigger(DriveStates.LOCKING_WHEELS_ROBOT, DriveStates.ROBOT_RELATIVE,
-                () -> DRIVER_CONTROLLER.getLeftBumperButtonPressed());
+                DRIVER_CONTROLLER::getLeftBumperButtonPressed);
     }
 
     /**
@@ -98,15 +107,17 @@ public class Drive extends Subsystem<DriveStates> {
             DriverStation.getAlliance().ifPresent(allianceColor -> {
                 driveIO.getDrive().setOperatorPerspectiveForward(
                         allianceColor == Alliance.Red
-                                ? Constants.Drive.redAlliancePerspectiveRotation
-                                : Constants.Drive.blueAlliancePerspectiveRotation);
+                                ? Constants.Drive.RED_ALLIANCE_PERSPECTIVE_ROTATION
+                                : Constants.Drive.BLUE_ALLIANCE_PERSPECTIVE_ROTATION);
                 robotMirrored = true;
             });
         }
-
-        getState().driveRobot();
-
         logOutputs(driveIO.getDrive().getState());
+
+        // Otherwise it will try to force wheels to stop in auto
+        if (!DriverStation.isAutonomous()) {
+            getState().driveRobot();
+        }
     }
 
     /**
@@ -125,7 +136,11 @@ public class Drive extends Subsystem<DriveStates> {
         Logger.recordOutput(SUBSYSTEM_NAME + "/Translation Difference",
                 state.Pose.getTranslation().minus(lastPose.getTranslation()));
         Logger.recordOutput(SUBSYSTEM_NAME + "/State", getState().getStateString());
-        Logger.recordOutput(SUBSYSTEM_NAME + "/Pose Jumped", Math.hypot(state.Pose.getTranslation().minus(lastPose.getTranslation()).getX(), state.Pose.getTranslation().minus(lastPose.getTranslation()).getY()) > (kSpeedAt12Volts.in(MetersPerSecond) * 2 * (lastTime - Utils.getSystemTimeSeconds())));
+        Logger.recordOutput(SUBSYSTEM_NAME + "/Pose Jumped",
+                Math.hypot(state.Pose.getTranslation().minus(lastPose.getTranslation()).getX(),
+                        state.Pose.getTranslation().minus(lastPose.getTranslation())
+                                .getY()) > (kSpeedAt12Volts.in(MetersPerSecond) * 2
+                                        * (lastTime - Utils.getSystemTimeSeconds())));
 
         lastPose = state.Pose;
         lastTime = Utils.getSystemTimeSeconds();
@@ -272,5 +287,59 @@ public class Drive extends Subsystem<DriveStates> {
             default:
                 return new PrintCommand("Invalid SysId mode (Dynamic)");
         }
+    }
+
+    // Path Planner UTIL
+
+    public void driveRobotRelative(ChassisSpeeds speeds) {
+        driveRobotRelative(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond);
+    }
+
+    // Better at driving stuff or sum (I think this makes a meh difference)
+    public void driveRobotRelativeWithFF(ChassisSpeeds speeds, DriveFeedforwards feedforwards) {
+        driveIO.getDrive().setControl(
+                    new SwerveRequest.ApplyRobotSpeeds().withSpeeds(speeds)
+                        .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
+                        .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons()));
+    }
+
+    public Pose2d getPose() {
+        return driveIO.getDrive().getState().Pose;
+    }
+
+    public void resetPose(Pose2d pose) {
+        driveIO.getDrive().resetPose(pose);
+    }
+
+    public ChassisSpeeds getRobotRelativeSpeeds() {
+        return driveIO.getDrive().getState().Speeds;
+    }
+
+
+    public void configurePathPlanner() {
+        AutoBuilder.configure(
+                this::getPose, // Robot pose supplier
+                this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
+                this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+                this::driveRobotRelativeWithFF, // Method that will drive the robot given ROBOT
+                                                                      // RELATIVE ChassisSpeeds. Also optionally outputs
+                                                                      // individual module feedforwards
+                PATH_PLANNER_PID,
+                ROBOT_CONFIG, // The robot configuration
+                () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
+                this // Reference to this subsystem to set requirements
+        );
+
+        // Log Relevant Path Planner Stufff
+        Pathfinding.setPathfinder(new LocalADStarAK());
+        PathPlannerLogging.setLogActivePathCallback(
+                (activePath) -> {
+                    Logger.recordOutput(
+                            SUBSYSTEM_NAME + "/Trajectory", activePath.toArray(new Pose2d[activePath.size()]));
+                });
+        PathPlannerLogging.setLogTargetPoseCallback(
+                (targetPose) -> {
+                    Logger.recordOutput(SUBSYSTEM_NAME + "/TrajectorySetpoint", targetPose);
+                });
     }
 }

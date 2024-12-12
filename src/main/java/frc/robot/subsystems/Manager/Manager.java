@@ -3,6 +3,8 @@ package frc.robot.subsystems.Manager;
 import static frc.robot.Constants.*;
 import static frc.robot.Constants.Controllers.TEST_CONTROLLER;
 
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.pioneersLib.subsystem.Subsystem;
@@ -41,6 +43,10 @@ public class Manager extends Subsystem<ManagerStates> {
 
     @Override
     public void runState() {
+
+        Logger.recordOutput("Manager/State", getState().getStateString());
+        Logger.recordOutput("Manager/State Time", getStateTime());
+
         drive.periodic();
 
         // Other subsystem periodics go here
