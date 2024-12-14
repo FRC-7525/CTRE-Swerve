@@ -140,8 +140,8 @@ public class Drive extends Subsystem<DriveStates> {
                 Math.hypot(state.Pose.getTranslation().minus(lastPose.getTranslation()).getX(),
                         state.Pose.getTranslation().minus(lastPose.getTranslation())
                                 .getY()) > (kSpeedAt12Volts.in(MetersPerSecond) * 2
-                                        * (lastTime - Utils.getSystemTimeSeconds())));
-
+                                        * (Utils.getSystemTimeSeconds() - lastTime)));
+                                        
         lastPose = state.Pose;
         lastTime = Utils.getSystemTimeSeconds();
     }
