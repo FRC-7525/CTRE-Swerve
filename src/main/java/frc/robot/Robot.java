@@ -34,6 +34,7 @@ public class Robot extends LoggedRobot {
                 break;
 
             case TESTING:
+                Logger.addDataReceiver(new NT4Publisher());
                 break;
         }
 
