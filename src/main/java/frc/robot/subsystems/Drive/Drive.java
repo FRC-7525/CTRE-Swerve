@@ -6,7 +6,6 @@ import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.pathfinding.LocalADStar;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.DriveFeedforwards;
 import com.pathplanner.lib.util.PathPlannerLogging;
@@ -341,5 +340,11 @@ public class Drive extends Subsystem<DriveStates> {
                 (targetPose) -> {
                     Logger.recordOutput(SUBSYSTEM_NAME + "/TrajectorySetpoint", targetPose);
                 });
+    }
+
+    public void addVisionMeasurement(Pose2d visionPose,
+            double timestamp,
+            Matrix<N3, N1> visionMeasurementStdDevs) {
+        driveIO.addVisionMeasurement(visionPose, timestamp, visionMeasurementStdDevs);
     }
 }
