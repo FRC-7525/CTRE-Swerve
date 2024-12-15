@@ -1,4 +1,4 @@
-package frc.robot.subsystems.vision;
+package frc.robot.subsystems.Vision;
 
 import java.util.Optional;
 
@@ -9,17 +9,33 @@ import frc.robot.pioneersLib.subsystem.Subsystem;
 import frc.robot.subsystems.Drive.Drive;
 
 import static frc.robot.Constants.Vision.*;
+import static frc.robot.Constants.*;
+
 
 public class Vision extends Subsystem<VisionStates> {
 
     private VisionIO io;
     private Drive drive;
 
-    public Vision(VisionIO io, Drive drive) {
+    private static Vision instance;
+
+    private Vision(VisionIO io, Drive drive) {
         super("Vision", VisionStates.ON);
 
         this.io = io;
         this.drive = drive;
+    }
+
+    public static Vision getInstance() {
+        if (instance == null) {
+            VisionIO visionIO = switch(ROBOT_MODE) {
+                case REAL -> new VisionIOReal();
+                case SIM -> new VisionIOSim();
+                case TESTING -> new VisionIO() {};
+            };
+            instance = new Vision(visionIO, Drive.getInstance());
+        }
+        return instance;
     }
 
     @Override
