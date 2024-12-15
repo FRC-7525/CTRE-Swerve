@@ -46,13 +46,13 @@ public class Vision extends Subsystem<VisionStates> {
     
             Optional<EstimatedRobotPose> frontPose = io.getFrontPoseEstimation();
             if (io.getFrontPoseEstimation().isPresent()) {
-                drive.addVisionMeasurment(frontPose.get().estimatedPose.toPose2d(), frontPose.get().timestampSeconds,
+                drive.addVisionMeasurement(frontPose.get().estimatedPose.toPose2d(), frontPose.get().timestampSeconds,
                         VisionUtil.getEstimationStdDevs(frontPose.get(), FRONT_RESOLUTION));
             }
     
             Optional<EstimatedRobotPose> sidePose = io.getSidePoseEstimation();
             if (sidePose.isPresent()) {
-                drive.addVisionMeasurment(
+                drive.addVisionMeasurement(
                         sidePose.get().estimatedPose.toPose2d(),
                         sidePose.get().timestampSeconds,
                         VisionUtil.getEstimationStdDevs(sidePose.get(), SIDE_RESOLUTION));
