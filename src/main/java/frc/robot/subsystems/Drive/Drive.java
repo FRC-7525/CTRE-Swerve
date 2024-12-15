@@ -342,4 +342,10 @@ public class Drive extends Subsystem<DriveStates> {
                     Logger.recordOutput(SUBSYSTEM_NAME + "/TrajectorySetpoint", targetPose);
                 });
     }
+
+    public void addVisionMeasurment(Pose2d visionPose,
+            double timestamp,
+            Matrix<N3, N1> visionMeasurementStdDevs) {
+        instance.addVisionMeasurment(visionPose, timestamp, visionMeasurementStdDevs);
+    }
 }
