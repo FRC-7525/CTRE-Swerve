@@ -5,11 +5,12 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.RobotBase;
+import frc.robot.pioneersLib.CI.CrashCheck;
 
 public final class Main {
   private Main() {}
 
   public static void main(String... args) {
-    RobotBase.startRobot(Robot::new);
+    RobotBase.startRobot("Crash".equals(System.getenv("CI_NAME")) ? CrashCheck::getInstance : Robot::new);
   }
 }

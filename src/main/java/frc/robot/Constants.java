@@ -26,7 +26,7 @@ public final class Constants {
         TESTING,
         SIM
     }
-    public static final RobotMode ROBOT_MODE = RobotMode.SIM;
+    public static final RobotMode ROBOT_MODE = "Crash".equals(System.getenv("CI_NAME")) ? RobotMode.SIM : RobotMode.SIM;
 
     public static class Controllers {
         public static final XboxController DRIVER_CONTROLLER = new XboxController(0);
